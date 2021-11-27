@@ -27,7 +27,7 @@ blobfinding for eye tracking:
 Installation
 ------------
 
-displayarray will be distributed on `PyPI <https://pypi.org>`__ as a
+hobotrackers will be distributed on `PyPI <https://pypi.org>`__ as a
 universal wheel in Python 3.6+ and PyPy.
 
 ::
@@ -44,7 +44,7 @@ See tests and examples for example usage.
 License
 -------
 
-displayarray is distributed under the terms of
+hobotrackers is distributed under the terms of
 
 -  `GPL 2.0 License <https://www.gnu.org/licenses/old-licenses/gpl-2.0.html>`__
 
