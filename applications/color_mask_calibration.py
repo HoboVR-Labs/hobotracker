@@ -38,6 +38,10 @@ def main(argv=None):
         from resources import saccade_test
 
         cam = saccade_test
+    elif args["--camera"] == "okawo_test":
+        from resources import okawo_3
+
+        cam = okawo_3
     else:
         cam = args["--camera"]
 
@@ -53,5 +57,5 @@ def main(argv=None):
 
 
 if __name__ == "__main__":
-    argv = ["calibrate", "-c", "saccade_test"]
+    argv = ["calibrate", "-c", "okawo_test"]
     main(argv)
