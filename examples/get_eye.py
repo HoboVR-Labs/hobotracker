@@ -1,3 +1,7 @@
+# SPDX-License-Identifier: GPL-2.0-only
+
+# Copyright (C) 2020 Josh Miklos <josh.miklos@hobovrlabs.org>
+
 from resources import okawo_3, crop_okawo_eye
 from displayarray import display
 from displayarray.effects import crop
