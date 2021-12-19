@@ -89,7 +89,7 @@ def eye_into_to_floats(x):
     out_pint = pnums.PInt(0, 0, bits=16)
     new_shape = out_pint.tensor.shape
     out_pint.tensor = x.detach().cpu().numpy().reshape(new_shape)
-    out_floats = [q / (2 ** 15) - 1 for q in out_pint.asfloat()],
+    out_floats = [q / (2 ** 15) - 1 for q in out_pint.asfloat()]
     return out_floats
 
 
@@ -102,12 +102,15 @@ def eval_eye_iter(frame_iter, trained_model: EyeConvNet):
         yield x
 
 
-def train_eye_iter(sample_iter, model:EyeConvNet):
+def train_eye_iter(sample_iter, model:EyeConvNet, lr=1e-4, inv=True):
     loss = nn.SmoothL1Loss()
-    optimizer = optim.Adam(model.parameters(), lr=1e-4)
+    optimizer = optim.Adam(model.parameters(), lr)
     for frame, eye_data in sample_iter:
         # adding inverted value onto input so we don't need biases to get useful stuff out of blank inputs:
-        v2v = combine_input_with_inversion(frame)
+        if inv:
+            v2v = combine_input_with_inversion(frame)
+        else:
+            v2v = frame
         v_new = cv_image_to_pytorch(v2v)
 
         # get value and train
