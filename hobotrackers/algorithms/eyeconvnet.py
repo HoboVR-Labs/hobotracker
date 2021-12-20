@@ -12,6 +12,23 @@ from hobotrackers.algorithms.recursive_pyramids import RecursivePyramidalize2D, 
 import cv2
 
 
+class TripleLinear(nn.Module):
+    def __init__(self, in_dimensions, out_dimensions, hidden_dimension=256):
+        super().__init__()
+        self.lin1 = nn.Linear(in_dimensions, hidden_dimension)
+        self.lin2 = nn.Linear(hidden_dimension, hidden_dimension)
+        self.lin3 = nn.Linear(hidden_dimension, out_dimensions)
+
+    def forward(self, x):
+        x = self.lin1.forward(x)
+        x = x / torch.max(x)
+        x = self.lin2.forward(x)
+        x = x / torch.max(x)
+        x = self.lin3.forward(x)
+
+        return x
+
+
 class PyrEncoder(nn.Module):
     DEFAULT_ENCODING_LEN = 32
 
@@ -22,17 +39,16 @@ class PyrEncoder(nn.Module):
         self.pool = nn.MaxPool2d(2)
         self.conv2 = nn.Conv2d(4, 8, 3, padding=1)
         self.conv3 = nn.Conv2d(8, 16, 3, padding=1)
-        self.conv4 = nn.Conv2d(16, desired_encoding_len, 3, padding=1)
+        self.conv4 = nn.Conv2d(16, desired_encoding_len, 13, padding=1)
 
     def forward(self, x):
         x = self.pyr.forward(x)
 
-        x = apply_func_to_nested_tensors(x, self.conv1.forward)
-        x = apply_func_to_nested_tensors(x, self.pool.forward)
-        x = apply_func_to_nested_tensors(x, self.conv2.forward)
-        x = apply_func_to_nested_tensors(x, self.pool.forward)
-        x = apply_func_to_nested_tensors(x, self.conv3.forward)
-        x = apply_func_to_nested_tensors(x, self.pool.forward)
+        x = apply_func_to_nested_tensors(x, self.conv1.forward, min_size=13)
+        x = apply_func_to_nested_tensors(x, self.pool.forward, min_size=13)
+        x = apply_func_to_nested_tensors(x, self.conv2.forward, min_size=13)
+        x = apply_func_to_nested_tensors(x, self.pool.forward, min_size=13)
+        x = apply_func_to_nested_tensors(x, self.conv3.forward, min_size=13)
         x = apply_func_to_nested_tensors(x, self.conv4.forward)
 
         x = full_max_pool_2d_nested(x, 0, 1, False, True)
@@ -44,34 +60,17 @@ class PyrEncoder(nn.Module):
 
         ih = [torch.div(x_inds, ws, rounding_mode='floor') for x_inds, ws in zip(x_ind, w)]
         iw = [x_inds - ihs for x_inds, ihs in zip(x_ind, ih)]
-        hs = [ihs/hs for ihs, hs in zip(ih, h)]
-        ws = [iws/ws for iws, ws in zip(iw, w)]
+        hs = [ihs / hs for ihs, hs in zip(ih, h)]
+        ws = [iws / ws for iws, ws in zip(iw, w)]
 
         return x, hs, ws
-
-
-class TripleLinear(nn.Module):
-    def __init__(self, in_dimensions, out_dimensions, hidden_dimension=256):
-        super().__init__()
-        self.lin1 = nn.Linear(in_dimensions, hidden_dimension)
-        self.lin2 = nn.Linear(hidden_dimension, hidden_dimension)
-        self.lin3 = nn.Linear(hidden_dimension, out_dimensions)
-
-    def forward(self, x):
-        x = self.lin1.forward(x)
-        x = x/torch.max(x)
-        x = self.lin2.forward(x)
-        x = x / torch.max(x)
-        x = self.lin3.forward(x)
-
-        return x
 
 
 class EyeConvNet(nn.Module):
     def __init__(self):
         super().__init__()
         self.enc = PyrEncoder()
-        self.lin = TripleLinear(576, int(16 * 2 ** 2))
+        self.lin = TripleLinear(480, int(16 * 2 ** 2))
 
     def forward(self, x):
         half_x = x[:, :, ::2, ::2]
@@ -109,7 +108,7 @@ def eval_eye_iter(frame_iter, trained_model: EyeConvNet):
         yield x
 
 
-def train_eye_iter(sample_iter, model:EyeConvNet, lr=1e-4, inv=True):
+def train_eye_iter(sample_iter, model: EyeConvNet, lr=1e-4, inv=True):
     loss = nn.SmoothL1Loss()
     optimizer = optim.Adam(model.parameters(), lr)
     for frame, eye_data in sample_iter:
