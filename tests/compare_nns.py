@@ -6,12 +6,12 @@ import math
 import torch
 import time
 
-from hobotrackers.algorithms.eyeconvnet_longer_conv import EyeConvNet5
-from hobotrackers.algorithms.eyeconvnet_longer_lin import EyeConvNetTripLin
-from hobotrackers.algorithms.eyeconvnet_no_bias import EyeConvNetNB
 from hobotrackers.algorithms.eyeconvnet import EyeConvNet, eye_train_loop, train_eye_iter, eye_into_to_floats
-from hobotrackers.algorithms.eyeconvnet_no_inv import EyeConvNetNoInv
-from hobotrackers.algorithms.eyeconvnet_pyr import EyeConvNetPyr
+from hobotrackers.algorithms.eyeconvnet_even_longer_lin import EyeConvNetEvenLongerLin
+from hobotrackers.algorithms.eyeconvnet_larger_conv import EyeConvNetLargerConv
+from hobotrackers.algorithms.eyeconvnet_larger_lin import EyeConvNetLargerLin
+from hobotrackers.algorithms.eyeconvnet_longer_conv import EyeConvNetLongerConv
+from hobotrackers.algorithms.eyeconvnet_longer_lin import EyeConvNetLongerLin
 from resources import eye_iter
 from hobotrackers.util.cv_torch_helpers import cv_image_to_pytorch
 from hobotrackers.util.general_nn_helpers import combine_input_with_inversion
@@ -92,7 +92,7 @@ def eval(model, export_csv: Optional[str] = None, inv=True):
     return avg_dist
 
 
-best_avg = 0.4790339588270681
+best_avg = 0.16571072227942096
 
 
 def test_eyeconvnet(capsys):
@@ -111,97 +111,97 @@ def test_eyeconvnet(capsys):
         file.write(f'vs best avg: {best_avg - avg_dist}')
 
 
-def test_eyeconvnet_no_inv(capsys):
+def test_eyeconvnet_longer_linear(capsys):
     t0 = time.time()
-    with open('test_eyeconvnet_no_inv.txt', 'w') as file:
-        model = train(EyeConvNetNoInv(), 'EyeConvNet_no_inv_train.csv', loops=1e5, inv=False)
+    with open('test_eyeconvnet_longer_linear.txt', 'w') as file:
+        model = train(EyeConvNetLongerLin(), 'EyeConvNet_longer_linear_train.csv', loops=1e5)
         t1 = time.time()
-        file.write(f'train time: {t1 - t0}\n')
+        file.write(f'train time: {t1-t0}')
         t0 = t1
 
-        avg_dist = eval(model, 'EyeConvNet_no_inv_eval.csv', inv=False)
+        avg_dist = eval(model, 'EyeConvNet_longer_linear_eval.csv')
         t1 = time.time()
-        file.write(f'eval time: {t1 - t0}\n')
+        file.write(f'eval time: {t1 - t0}')
 
-        file.write(f'avg dist: {avg_dist}\n')
-        file.write(f'vs best avg: {best_avg - avg_dist}\n')
+        file.write(f'avg dist: {avg_dist}')
+        file.write(f'vs best avg: {best_avg - avg_dist}')
 
 
-def test_eyeconvnet_lr1e5(capsys):
+def test_eyeconvnet_even_longer_linear(capsys):
     t0 = time.time()
-    with open('test_eyeconvnet_lr1e5.txt', 'w') as file:
-        model = train(EyeConvNet(), 'EyeConvNet_lr1e-5_train.csv', loops=1e5, lr=1e-5)
+    with open('test_eyeconvnet_even_longer_linear.txt', 'w') as file:
+        model = train(EyeConvNetEvenLongerLin(), 'EyeConvNet_even_longer_linear_train.csv', loops=1e5)
         t1 = time.time()
-        file.write(f'train time: {t1 - t0}\n')
+        file.write(f'train time: {t1-t0}')
         t0 = t1
 
-        avg_dist = eval(model, 'EyeConvNet_lr1e-5_eval.csv')
+        avg_dist = eval(model, 'EyeConvNet_even_longer_linear_eval.csv')
         t1 = time.time()
-        file.write(f'eval time: {t1 - t0}\n')
+        file.write(f'eval time: {t1 - t0}')
 
-        file.write(f'avg dist: {avg_dist}\n')
-        file.write(f'vs best avg: {best_avg - avg_dist}\n')
+        file.write(f'avg dist: {avg_dist}')
+        file.write(f'vs best avg: {best_avg - avg_dist}')
 
 
-def test_eyeconvnetnb(capsys):
+def test_eyeconvnet_larger_linear(capsys):
     t0 = time.time()
-    with open('test_eyeconvnetnb.txt', 'w') as file:
-        model = train(EyeConvNetNB(), 'EyeConvNet_no_bias_train.csv', loops=1e5)
+    with open('test_eyeconvnet_larger_linear.txt', 'w') as file:
+        model = train(EyeConvNetLargerLin(), 'EyeConvNet_larger_linear_train.csv', loops=1e5)
         t1 = time.time()
-        file.write(f'train time: {t1 - t0}\n')
+        file.write(f'train time: {t1-t0}')
         t0 = t1
 
-        avg_dist = eval(model, 'EyeConvNet_no_bias_eval.csv')
+        avg_dist = eval(model, 'EyeConvNet_larger_linear_eval.csv')
         t1 = time.time()
-        file.write(f'eval time: {t1 - t0}\n')
+        file.write(f'eval time: {t1 - t0}')
 
-        file.write(f'avg dist: {avg_dist}\n')
-        file.write(f'vs best avg: {best_avg - avg_dist}\n')
-
-
-def test_eyeconvnetpyr(capsys):
-    t0 = time.time()
-    with open('test_eyeconvnetpyr.txt', 'w') as file:
-        model = train(EyeConvNetPyr(), 'EyeConvNet_pyr_train.csv', loops=1e5)
-        t1 = time.time()
-        file.write(f'train time: {t1 - t0}\n')
-        t0 = t1
-
-        avg_dist = eval(model, 'EyeConvNet_pyr_eval.csv')
-        t1 = time.time()
-        file.write(f'eval time: {t1 - t0}\n')
-
-        file.write(f'avg dist: {avg_dist}\n')
-        file.write(f'vs best avg: {best_avg - avg_dist}\n')
-
-
-def test_eyeconvnet_longer_lin(capsys):
-    t0 = time.time()
-    with open('test_eyeconvnet_longer_lin.txt', 'w') as file:
-        model = train(EyeConvNetTripLin(), 'EyeConvNet_longer_lin_train.csv', loops=1e5)
-        t1 = time.time()
-        file.write(f'train time: {t1 - t0}\n')
-        t0 = t1
-
-        avg_dist = eval(model, 'EyeConvNet_longer_lin_eval.csv')
-        t1 = time.time()
-        file.write(f'eval time: {t1 - t0}\n')
-
-        file.write(f'avg dist: {avg_dist}\n')
-        file.write(f'vs best avg: {best_avg - avg_dist}\n')
+        file.write(f'avg dist: {avg_dist}')
+        file.write(f'vs best avg: {best_avg - avg_dist}')
 
 
 def test_eyeconvnet_longer_conv(capsys):
     t0 = time.time()
     with open('test_eyeconvnet_longer_conv.txt', 'w') as file:
-        model = train(EyeConvNet5(), 'EyeConvNet_longer_conv_train.csv', loops=1e5)
+        model = train(EyeConvNetLongerConv(), 'EyeConvNet_longer_conv_train.csv', loops=1e5)
         t1 = time.time()
-        file.write(f'train time: {t1 - t0}\n')
+        file.write(f'train time: {t1-t0}')
         t0 = t1
 
         avg_dist = eval(model, 'EyeConvNet_longer_conv_eval.csv')
         t1 = time.time()
-        file.write(f'eval time: {t1 - t0}\n')
+        file.write(f'eval time: {t1 - t0}')
 
-        file.write(f'avg dist: {avg_dist}\n')
-        file.write(f'vs best avg: {best_avg - avg_dist}\n')
+        file.write(f'avg dist: {avg_dist}')
+        file.write(f'vs best avg: {best_avg - avg_dist}')
+
+
+def test_eyeconvnet_larger_conv(capsys):
+    t0 = time.time()
+    with open('test_eyeconvnet_larger_conv.txt', 'w') as file:
+        model = train(EyeConvNetLargerConv(), 'EyeConvNet_larger_conv_train.csv', loops=1e5)
+        t1 = time.time()
+        file.write(f'train time: {t1-t0}')
+        t0 = t1
+
+        avg_dist = eval(model, 'EyeConvNet_larger_conv_eval.csv')
+        t1 = time.time()
+        file.write(f'eval time: {t1 - t0}')
+
+        file.write(f'avg dist: {avg_dist}')
+        file.write(f'vs best avg: {best_avg - avg_dist}')
+
+
+def test_eyeconvnet_lr1e5(capsys):
+    t0 = time.time()
+    with open('test_eyeconvnet_lr1e-5.txt', 'w') as file:
+        model = train(EyeConvNet(), 'EyeConvNet_lr1e-5_train.csv', loops=1e5, lr=1e-5)
+        t1 = time.time()
+        file.write(f'train time: {t1-t0}')
+        t0 = t1
+
+        avg_dist = eval(model, 'EyeConvNet_lr1e-5_eval.csv')
+        t1 = time.time()
+        file.write(f'eval time: {t1 - t0}')
+
+        file.write(f'avg dist: {avg_dist}')
+        file.write(f'vs best avg: {best_avg - avg_dist}')

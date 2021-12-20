@@ -13,13 +13,14 @@ from hobotrackers.algorithms.recursive_pyramids import RecursivePyramidalize2D, 
 import cv2
 
 
-class QuadLinear(nn.Module):
+class Linear5(nn.Module):
     def __init__(self, in_dimensions, out_dimensions, hidden_dimension=256):
         super().__init__()
         self.lin1 = nn.Linear(in_dimensions, hidden_dimension)
         self.lin2 = nn.Linear(hidden_dimension, hidden_dimension)
         self.lin3 = nn.Linear(hidden_dimension, hidden_dimension)
-        self.lin4 = nn.Linear(hidden_dimension, out_dimensions)
+        self.lin4 = nn.Linear(hidden_dimension, hidden_dimension)
+        self.lin5 = nn.Linear(hidden_dimension, out_dimensions)
 
     def forward(self, x):
         x = self.lin1.forward(x)
@@ -29,15 +30,17 @@ class QuadLinear(nn.Module):
         x = self.lin3.forward(x)
         x = x / torch.max(x)
         x = self.lin4.forward(x)
+        x = x / torch.max(x)
+        x = self.lin5.forward(x)
 
         return x
 
 
-class EyeConvNetLongerLin(nn.Module):
+class EyeConvNetEvenLongerLin(nn.Module):
     def __init__(self):
         super().__init__()
         self.enc = PyrEncoder()
-        self.lin = QuadLinear(576, int(16 * 2 ** 2))
+        self.lin = Linear5(576, int(16 * 2 ** 2))
 
     def forward(self, x):
         half_x = x[:, :, ::2, ::2]
