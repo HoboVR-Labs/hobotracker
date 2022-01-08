@@ -115,9 +115,9 @@ def train_eye_iter_f(sample_iter, model: EyeConvNet, lr=1e-4, inv=True):
 
         # yield predicted vs actual outputs. We can use this to determine when to stop training.
         yield {
-            'Guess': x,
+            'Guess': x.cpu().detach().numpy(),
             'Actual': eye_data,
-            'Loss': loss_val.detach().cpu().numpy()
+            'Loss': loss_val.detach().cpu().numpy().item()
         }
 
 

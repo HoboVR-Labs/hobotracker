@@ -7,6 +7,7 @@ import torch
 import time
 
 from hobotrackers.algorithms.eyeconvnetpnum import EyeConvNetP, eye_train_loop, train_eye_iter_p, eye_into_to_floats
+from hobotrackers.algorithms.eyeconvnetfloat import EyeConvNet, train_eye_iter_f
 from resources import eye_iter
 from hobotrackers.util.cv_torch_helpers import cv_image_to_pytorch
 from hobotrackers.util.general_nn_helpers import combine_input_with_inversion
@@ -15,14 +16,21 @@ from typing import Optional
 import cv2
 
 
-def train(model, export_csv=None, loops=1e6, verbose=True, lr=1e-4, inv=True):
+def train(model, out_type, export_csv=None, loops=1e6, verbose=True, lr=1e-4, inv=True):
     if export_csv is not None:
         csv_file = open(export_csv, 'w', newline='')
         csv_writer = csv.writer(csv_file, delimiter=' ', quotechar='|', quoting=csv.QUOTE_MINIMAL)
         csv_writer.writerow(['x_actual', 'y_actual', 'x_predicted', 'y_predicted',
                              'distance_x', 'distance_y', 'distance', 'total_dist', 'loss', 'average_dist'])
 
-    for i, d in enumerate(train_eye_iter_p(eye_train_loop(), model, lr=lr, inv=inv)):
+    if out_type=='f':
+        train_eye_iter = train_eye_iter_f
+    elif out_type=='p':
+        train_eye_iter = train_eye_iter_p
+    else:
+        raise NotImplementedError()
+
+    for i, d in enumerate(train_eye_iter(eye_train_loop(), model, lr=lr, inv=inv)):
         x = d['Guess']
         a = d['Actual']
         l = d['Loss']
@@ -93,7 +101,7 @@ best_avg = 0.16571072227942096
 def test_eyeconvnet_f(capsys):
     t0 = time.time()
     with open('test_eyeconvnet_float.txt', 'w') as file:
-        model = train(EyeConvNetP(), 'EyeConvNet_train_float.csv', loops=1e5)
+        model = train(EyeConvNet(), 'f', 'EyeConvNet_train_float.csv', loops=1e5)
         t1 = time.time()
         file.write(f'train time: {t1-t0}')
         t0 = t1
@@ -111,7 +119,7 @@ def test_eyeconvnet_f(capsys):
 def test_eyeconvnet_p(capsys):
     t0 = time.time()
     with open('test_eyeconvnet_pnum.txt', 'w') as file:
-        model = train(EyeConvNetP(), 'EyeConvNet_train_pnum.csv', loops=1e5)
+        model = train(EyeConvNetP(), 'p', 'EyeConvNet_train_pnum.csv', loops=1e5)
         t1 = time.time()
         file.write(f'train time: {t1-t0}')
         t0 = t1
