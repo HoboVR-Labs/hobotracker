@@ -12,7 +12,7 @@ from hobotrackers.algorithms.recursive_pyramids import RecursivePyramidalize2D, 
 import cv2
 
 
-class TripleLinear(nn.Module):
+class TripleLinearP(nn.Module):
     def __init__(self, in_dimensions, out_dimensions, hidden_dimension=256):
         super().__init__()
         self.lin1 = nn.Linear(in_dimensions, hidden_dimension)
@@ -29,7 +29,7 @@ class TripleLinear(nn.Module):
         return x
 
 
-class PyrEncoder(nn.Module):
+class PyrEncoderP(nn.Module):
     DEFAULT_ENCODING_LEN = 32
 
     def __init__(self, desired_encoding_len=DEFAULT_ENCODING_LEN):
@@ -66,11 +66,11 @@ class PyrEncoder(nn.Module):
         return x, hs, ws
 
 
-class EyeConvNet(nn.Module):
+class EyeConvNetP(nn.Module):
     def __init__(self):
         super().__init__()
-        self.enc = PyrEncoder()
-        self.lin = TripleLinear(480, int(16 * 2 ** 2))
+        self.enc = PyrEncoderP()
+        self.lin = TripleLinearP(480, int(16 * 2 ** 2))
 
     def forward(self, x):
         half_x = x[:, :, ::2, ::2]
@@ -84,7 +84,7 @@ class EyeConvNet(nn.Module):
 
 def eye_train_loop(loop_forever=True):
     # todo: add optional cv based distortions such as skew, rotation, or hue shifting
-    for _, frame, eye_data in eye_iter(loop=True):
+    for _, frame, eye_data in eye_iter(loop=True, shuffle=True):
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
         v = hsv[:, :, 2:] / 255
@@ -99,7 +99,7 @@ def eye_into_to_floats(x):
     return out_floats
 
 
-def eval_eye_iter(frame_iter, trained_model: EyeConvNet):
+def eval_eye_iter_p(frame_iter, trained_model: EyeConvNetP):
     for frame in frame_iter:
         v2v = combine_input_with_inversion(frame)
         v_new = cv_image_to_pytorch(v2v)
@@ -108,9 +108,35 @@ def eval_eye_iter(frame_iter, trained_model: EyeConvNet):
         yield x
 
 
-def train_eye_iter(sample_iter, model: EyeConvNet, lr=1e-4, inv=True):
-    loss = nn.SmoothL1Loss()
+def pnum_loss(input:torch.Tensor, goal: pnums.PInt, base_loss = nn.SmoothL1Loss):
+    """Gives a loss function so that large number difference have more loss than small ones."""
+    # todo: move this to the pnums library
+
+    loss = None
+
+    input_size = torch.numel(input)
+    goal_size = goal.tensor.size
+
+    loss_fn = base_loss()
+
+    assert input_size == goal_size, f"Input tensor size ({input_size}) should match goal size ({goal_size})."
+
+    in_tensor = torch.reshape(input, goal.tensor.shape)
+
+    for b in range(goal.bits):
+        input_part = in_tensor[..., b]
+        goal_part = goal.tensor[..., b]
+        if loss is None:
+            loss = loss_fn(input_part, torch.FloatTensor(goal_part)) / 2**b
+        else:
+            loss += loss_fn(input_part, torch.FloatTensor(goal_part)) / 2**b
+
+    return loss
+
+
+def train_eye_iter_p(sample_iter, model: EyeConvNetP, lr=1e-4, inv=True):
     optimizer = optim.Adam(model.parameters(), lr)
+
     for frame, eye_data in sample_iter:
         # adding inverted value onto input so we don't need biases to get useful stuff out of blank inputs:
         if inv:
@@ -123,21 +149,22 @@ def train_eye_iter(sample_iter, model: EyeConvNet, lr=1e-4, inv=True):
         optimizer.zero_grad()
         x = model(v_new)
         goal_enc = pnums.PInt(*[(q + 1) * 2 ** 15 for q in eye_data], bits=16)
-        loss_val = loss(x, torch.FloatTensor(goal_enc.tensor.flatten()))
+        loss_val = pnum_loss(x, goal_enc)
         loss_val.backward()
         optimizer.step()
 
         # yield predicted vs actual outputs. We can use this to determine when to stop training.
         yield {
             'Guess': eye_into_to_floats(x),
-            'Actual': eye_data
+            'Actual': eye_data,
+            'Loss': loss_val.detach().cpu().numpy()
         }
 
 
-def simple_eval_iter(frame_iter, model_filename='eye_conv_net_1.torch'):
-    model = EyeConvNet()
+def simple_eval_iter_p(frame_iter, model_filename='eye_conv_net_1.torch'):
+    model = EyeConvNetP()
     model.load_state_dict(torch.load(model_filename))
     model.eval()
 
-    for x in eval_eye_iter(frame_iter, model):
+    for x in eval_eye_iter_p(frame_iter, model):
         yield x

@@ -4,16 +4,16 @@
 
 import torch
 import time
-from hobotrackers.algorithms.eyeconvnet import EyeConvNet, eye_train_loop, train_eye_iter
+from hobotrackers.algorithms.eyeconvnetpnum import EyeConvNetP, eye_train_loop, train_eye_iter_p
 
 time_in_seconds = 3600
 output_filename = 'eye_conv_net_1.torch'
 
 t0 = time.time()
 
-model = EyeConvNet()
+model = EyeConvNetP()
 
-for d in train_eye_iter(eye_train_loop(), model):
+for d in train_eye_iter_p(eye_train_loop(), model):
     print(d)
     t1 = time.time()
     if t1 - t0 > time_in_seconds:

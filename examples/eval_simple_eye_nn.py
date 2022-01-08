@@ -3,7 +3,7 @@
 # Copyright (C) 2020 Josh Miklos <josh.miklos@hobovrlabs.org>
 
 from displayarray import read_updates
-from hobotrackers.algorithms.eyeconvnet import eye_train_loop, simple_eval_iter
+from hobotrackers.algorithms.eyeconvnetpnum import eye_train_loop, simple_eval_iter_p
 
 
 def grab_frames(cam):
@@ -18,5 +18,5 @@ def eye_eval_loop():
         yield frame
 
 
-for x in simple_eval_iter(eye_eval_loop()):
+for x in simple_eval_iter_p(eye_eval_loop()):
     print(x)

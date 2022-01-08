@@ -6,6 +6,8 @@ import numpy as np
 
 
 def combine_input_with_inversion(input_frame):
+    if input_frame.ndim == 2:
+        input_frame = input_frame[..., None]
     framei = (1.0 - input_frame)
     v2v = np.concatenate((input_frame, framei), axis=2)
     return v2v
